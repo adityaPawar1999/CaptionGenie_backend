@@ -3,40 +3,45 @@ const mongoose = require("mongoose");
 const dotenv = require("dotenv");
 const cors = require("cors");
 const cookieParser = require("cookie-parser");
-const jwt = require("jsonwebtoken");
-const authRoutes = require("./routes/authRoutes");
+const path = require("path");
 
-const PORT = process.env.PORT || 5010;
+const authRoutes = require("./routes/authRoutes");
+const postRoutes = require("./routes/postRoutes");
 
 dotenv.config();
 const app = express();
+const PORT = process.env.PORT || 5010;
 
-console.log('Server is running...');
+// ✅ Check for MONGO_URI
+if (!process.env.MONGO_URI) {
+  console.error("❌ MONGO_URI is missing in .env file");
+  process.exit(1);
+}
 
-// ✅ Apply middleware in the correct order
+// ✅ Middleware
 app.use(express.json());
+app.use('/images', express.static(path.join(__dirname, 'images')));
+
+
 app.use(cookieParser());
-app.use(cors({ 
-  origin: ["https://captiongenie-nlsq.vercel.app"], // Replace with your frontend URL
-  credentials: true // If using cookies or authentication
+app.use(cors({
+  origin: ["http://localhost:5173", "https://captiongenie-nlsq.vercel.app"], 
+  credentials: true
 }));
 
-// ✅ Register routes after middleware
+// ✅ Routes
 app.use("/api/auth", authRoutes);
+app.use("/api/posts", postRoutes);
 
-// ✅ Connect to MongoDB and start the server
+console.log("🚀 Server is starting...");
 
-
-mongoose.connect(process.env.MONGO_URI, { useNewUrlParser: true, useUnifiedTopology: true })
+// ✅ MongoDB Connection & Server Start
+mongoose.connect(process.env.MONGO_URI)
   .then(() => {
-    console.log("MongoDB connected successfully");
-    app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+    console.log("✅ MongoDB connected successfully");
+    app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
   })
   .catch(err => {
-    console.error("MongoDB connection error:", err);
-    process.exit(1); // Exit if the database connection fails
+    console.error("❌ MongoDB connection error:", err);
+    process.exit(1);
   });
-
-
-
-  //aj12@GMAIL.COM 1111

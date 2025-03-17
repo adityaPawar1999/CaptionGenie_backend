@@ -2,6 +2,7 @@ const express = require("express");
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcrypt");
 const User = require("../models/User");
+const Post = require ("../models/Post")
 const cookieParser = require("cookie-parser");
 const dotenv = require("dotenv");
 
