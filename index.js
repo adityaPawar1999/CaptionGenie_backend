@@ -10,7 +10,7 @@ const postRoutes = require("./routes/postRoutes");
 
 dotenv.config();
 const app = express();
-const PORT = process.env.PORT || 5010;
+const PORT = process.env.PORT ;
 
 // ✅ Check for MONGO_URI
 if (!process.env.MONGO_URI) {

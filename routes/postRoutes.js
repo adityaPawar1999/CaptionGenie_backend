@@ -2,6 +2,7 @@ const express = require("express");
 const router = express.Router();
 const Post = require("../models/Post");
 const multer = require("multer");
+const path = require("path");
 
 const { body, validationResult } = require("express-validator"); // Import validation functions
 const authenticateToken = require("./authenticateToken");
@@ -74,6 +75,7 @@ router.post("/create", authenticateToken, (req, res, next) => {
         });
 
         await newPost.save();
+        console.log(newPost);
         res.status(201).json({ message: "Post created successfully", post: newPost });
 
     } catch (error) {
@@ -137,11 +139,11 @@ router.delete("/delete/:id", authenticateToken, async (req, res) => {
     }
 });
 
-// 🔹 Get All Posts
-router.get("/all", async (req, res) => {
+// 🔹 Get All Posts (Protected)
+router.get("/", authenticateToken, async (req, res) => {
     try {
-        const posts = await Post.find().sort({ createdAt: -1 }); // Sort by latest posts
-        res.status(200).json(posts);
+        const posts = await Post.find().populate('user', 'name username email');
+        res.json(posts);
     } catch (error) {
         console.error("🚨 Error fetching posts:", error);
         res.status(500).json({ error: "Server error while fetching posts" });
