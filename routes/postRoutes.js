@@ -1,6 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const Post = require("../models/Post");
+const mongoose = require("mongoose");
 const multer = require("multer");
 const path = require("path");
 
@@ -147,6 +148,20 @@ router.get("/", authenticateToken, async (req, res) => {
     } catch (error) {
         console.error("🚨 Error fetching posts:", error);
         res.status(500).json({ error: "Server error while fetching posts" });
+    }
+});
+router.get("/:id", async (req, res) => {
+    const { id } = req.params;
+    console.log
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ error: "Invalid ID format" });
+    }
+    try {
+      const post = await Post.findById(id).populate('user', 'username email');
+      if (!post) return res.status(404).json({ error: "Post not found" });
+      res.json(post);
+    } catch (error) {
+      res.status(500).json({ error: "Server error", details: error.message });
     }
 });
 
