@@ -152,12 +152,12 @@ router.get("/", authenticateToken, async (req, res) => {
 });
 router.get("/:id", async (req, res) => {
     const { id } = req.params;
-    console.log
+    console.log('am hit single')
     if (!mongoose.Types.ObjectId.isValid(id)) {
       return res.status(400).json({ error: "Invalid ID format" });
     }
     try {
-      const post = await Post.findById(id).populate('user', 'username email');
+      const post = await Post.findById(id).populate('user', 'name username email');
       if (!post) return res.status(404).json({ error: "Post not found" });
       res.json(post);
     } catch (error) {
