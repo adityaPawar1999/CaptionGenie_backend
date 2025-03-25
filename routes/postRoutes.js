@@ -140,8 +140,8 @@ router.delete("/delete/:id", authenticateToken, async (req, res) => {
     }
 });
 
-// 🔹 Get All Posts (Protected)
-router.get("/", authenticateToken, async (req, res) => {
+// 🔹 Get All Posts (Public)
+router.get("/", async (req, res) => {
     try {
         const posts = await Post.find().populate('user', 'name username email');
         res.json(posts);
@@ -166,3 +166,5 @@ router.get("/:id", async (req, res) => {
 });
 
 module.exports = router;
+
+
