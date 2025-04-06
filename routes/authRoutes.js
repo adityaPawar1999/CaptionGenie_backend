@@ -48,7 +48,7 @@ router.post("/signup", async (req, res) => {
 // 🔹 User Login Route
 router.post("/login", async (req, res) => {
   try {
-    console.log("we here")
+    console.log("we here really bro")
     const { email, password } = req.body;
     const user = await User.findOne({ email });
 
@@ -57,6 +57,7 @@ router.post("/login", async (req, res) => {
     }
 
     const token = generateToken(user);
+    console.log("login usr id is",user._id)
 
     res.cookie("token", token, {
       httpOnly: true,
@@ -65,9 +66,19 @@ router.post("/login", async (req, res) => {
       maxAge: 10 * 24 * 60 * 60 * 1000, // 10 days
     });
 
-    res.json({ message: "Login successful", user: { name: user.name, email: user.email }, token });
+    res.json({ 
+      message: "Login successful", 
+      user: { 
+        id: user._id,
+        name: user.name, 
+        email: user.email, 
+        isAdmin: user.isAdmin 
+      }, 
+      token 
+    });
     
-    console.log({ message: "Login successful", user: { name: user.name, email: user.email }, token });
+    console.log({ message: "Login successful", user: { id:user._id , name: user.name, email: user.email, isAdmin: user.isAdmin }, token });
+    
   } catch (err) {
     res.status(500).json({ message: "Server error", error: err.message });
   }

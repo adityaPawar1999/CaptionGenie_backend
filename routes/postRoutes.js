@@ -1,12 +1,64 @@
 const express = require("express");
 const router = express.Router();
 const Post = require("../models/Post");
+const User = require("../models/User");
 const mongoose = require("mongoose");
 const multer = require("multer");
 const path = require("path");
 
 const { body, validationResult } = require("express-validator"); // Import validation functions
 const authenticateToken = require("./authenticateToken");
+const adminMiddleware = require("../middleware/adminMiddleware");
+
+// 🔹 Admin Routes for Post Management
+router.get("/admin/all", adminMiddleware, async (req, res) => {
+    try {
+        const posts = await Post.find().populate('user', 'name username email');
+        res.json(posts);
+    } catch (error) {
+        console.error("🚨 Error fetching posts:", error);
+        res.status(500).json({ error: "Server error while fetching posts" });
+    }
+});
+
+router.put("/admin/update/:id", adminMiddleware, async (req, res) => {
+    try {
+        const { title, categories, description, links, tags } = req.body;
+        const post = await Post.findById(req.params.id);
+        
+        if (!post) {
+            return res.status(404).json({ error: "Post not found" });
+        }
+
+        // Update post fields
+        post.title = title || post.title;
+        post.categories = categories || post.categories;
+        post.description = description || post.description;
+        post.links = links || post.links;
+        post.tags = tags || post.tags;
+
+        await post.save();
+        res.status(200).json({ message: "Post updated successfully by admin", post });
+    } catch (error) {
+        console.error("🚨 Error updating post:", error);
+        res.status(500).json({ error: "Server error while updating post", details: error.message });
+    }
+});
+
+router.delete("/admin/delete/:id", adminMiddleware, async (req, res) => {
+    try {
+        const post = await Post.findById(req.params.id);
+        if (!post) {
+            return res.status(404).json({ error: "Post not found" });
+        }
+
+        await post.deleteOne();
+        res.status(200).json({ message: "Post deleted successfully by admin" });
+    } catch (error) {
+        console.error("🚨 Error deleting post:", error);
+        res.status(500).json({ error: "Server error while deleting post", details: error.message });
+    }
+});
 
 // 🔹 Multer Storage Configuration
 const storage = multer.diskStorage({
@@ -140,10 +192,43 @@ router.delete("/delete/:id", authenticateToken, async (req, res) => {
     }
 });
 
-// 🔹 Get All Posts (Public)
+// 🔹 Get Related Posts by Categories (Public)
+router.post("/related", async (req, res) => {
+    try {
+        const { categories } = req.body;
+        const { excludePostId } = req.query;
+        
+        if (!categories || !Array.isArray(categories) || categories.length === 0) {
+            return res.status(400).json({ error: "Categories array is required" });
+        }
+        
+        // Find posts with matching categories, excluding the current post
+        const relatedPosts = await Post.find({
+            categories: { $in: categories },
+            _id: { $ne: excludePostId }
+        })
+        .sort({ createdAt: -1 }) // Sort by newest first
+        .limit(5) // Limit to 5 related posts
+        .populate('user', 'name username');
+        
+        res.json({ posts: relatedPosts });
+    } catch (error) {
+        console.error("🚨 Error fetching related posts:", error);
+        res.status(500).json({ error: "Server error while fetching related posts" });
+    }
+});
+// 🔹 Get All Posts (Public) with optional category filter
 router.get("/", async (req, res) => {
     try {
-        const posts = await Post.find().populate('user', 'name username email');
+        const { category } = req.query;
+        let query = {};
+        
+        // If category is provided, filter posts by that category
+        if (category) {
+            query.categories = category;
+        }
+        
+        const posts = await Post.find(query).populate('user', 'name username email');
         res.json(posts);
     } catch (error) {
         console.error("🚨 Error fetching posts:", error);
@@ -151,17 +236,94 @@ router.get("/", async (req, res) => {
     }
 });
 router.get("/:id", async (req, res) => {
-    const { id } = req.params;
-    console.log('am hit single')
-    if (!mongoose.Types.ObjectId.isValid(id)) {
-      return res.status(400).json({ error: "Invalid ID format" });
-    }
     try {
-      const post = await Post.findById(id).populate('user', 'name username email');
-      if (!post) return res.status(404).json({ error: "Post not found" });
-      res.json(post);
+        const { id } = req.params;
+        console.log('🔍 Fetching post with ID:', id);
+
+        if (!mongoose.Types.ObjectId.isValid(id)) {
+            console.log('❌ Invalid post ID format:', id);
+            return res.status(400).json({ error: "Invalid post ID format" });
+        }
+
+        const post = await Post.findById(id).populate('user', 'name username email');
+        
+        if (!post) {
+            console.log('❌ Post not found with ID:', id);
+            return res.status(404).json({ error: "Post not found" });
+        }
+
+        console.log('✅ Successfully retrieved post:', post._id);
+        res.json(post);
+
     } catch (error) {
-      res.status(500).json({ error: "Server error", details: error.message });
+        console.error('🚨 Server error while fetching post:', error);
+        res.status(500).json({
+            error: "Server error while fetching post",
+            details: error.message
+        });
+    }
+});
+
+// 🔹 Save Post (Protected)
+router.post('/save/:id', authenticateToken, async (req, res) => {
+    try {
+        const post = await Post.findById(req.params.id);
+        if (!post) {
+            return res.status(404).json({ error: 'Post not found' });
+        }
+
+        const user = await User.findById(req.user.id);
+        if (!user) {
+            return res.status(404).json({ error: 'User not found' });
+        }
+
+        // Check if post is already saved
+        if (user.savedPosts.includes(post._id)) {
+            return res.status(400).json({ error: 'Post already saved' });
+        }
+
+        // Add post to user's saved posts
+        user.savedPosts.push(post._id);
+        await user.save();
+
+        res.json({ message: 'Post saved successfully' });
+    } catch (error) {
+        console.error('🚨 Error saving post:', error);
+        res.status(500).json({ error: 'Server error while saving post' });
+    }
+});
+
+// 🔹 Unsave Post (Protected)
+router.delete('/unsave/:id', authenticateToken, async (req, res) => {
+    try {
+        const user = await User.findById(req.user.id);
+        if (!user) {
+            return res.status(404).json({ error: 'User not found' });
+        }
+
+        // Remove post from saved posts
+        user.savedPosts = user.savedPosts.filter(postId => postId.toString() !== req.params.id);
+        await user.save();
+
+        res.json({ message: 'Post removed from saved posts' });
+    } catch (error) {
+        console.error('🚨 Error unsaving post:', error);
+        res.status(500).json({ error: 'Server error while unsaving post' });
+    }
+});
+
+// 🔹 Get User's Saved Posts (Protected)
+router.get('/saved/posts', authenticateToken, async (req, res) => {
+    try {
+        const user = await User.findById(req.user.id).populate('savedPosts');
+        if (!user) {
+            return res.status(404).json({ error: 'User not found' });
+        }
+
+        res.json(user.savedPosts);
+    } catch (error) {
+        console.error('🚨 Error fetching saved posts:', error);
+        res.status(500).json({ error: 'Server error while fetching saved posts' });
     }
 });
 
