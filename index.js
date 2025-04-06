@@ -29,10 +29,12 @@ app.use(cookieParser());
 app.use(cors({
   origin: ["https://captiongenie-nlsq.vercel.app", "https://captiongenie-y4do.vercel.app", "https://believable-truth.up.railway.app"],
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept'],
+  exposedHeaders: ['Content-Length', 'Authorization'],
   credentials: true,
   maxAge: 86400, // 24 hours
-  preflightContinue: false
+  preflightContinue: false,
+  optionsSuccessStatus: 204
 }));
 
 // ✅ Routes
