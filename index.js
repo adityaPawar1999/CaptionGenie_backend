@@ -27,11 +27,12 @@ app.use('/images', express.static(path.join(__dirname, 'images')));
 
 app.use(cookieParser());
 app.use(cors({
-  origin: ["http://localhost:5173", "http://localhost:5174", "http://localhost:3000", "https://captiongenie-nlsq.vercel.app", "https://captiongenie-y4do.vercel.app","https://captiongenie-nlsq.vercel.app/"],
+  origin: ["http://localhost:5173", "http://localhost:5174", "http://localhost:3000", "https://captiongenie-nlsq.vercel.app", "https://captiongenie-y4do.vercel.app"],
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
   credentials: true,
-  maxAge: 86400 // 24 hours
+  maxAge: 86400, // 24 hours
+  preflightContinue: true
 }));
 
 // ✅ Routes
