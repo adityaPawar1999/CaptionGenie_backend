@@ -32,7 +32,7 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
   credentials: true,
   maxAge: 86400, // 24 hours
-  preflightContinue: true
+  preflightContinue: false
 }));
 
 // ✅ Routes
