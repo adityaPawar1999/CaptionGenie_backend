@@ -7,6 +7,7 @@ const path = require("path");
 
 const authRoutes = require("./routes/authRoutes");
 const postRoutes = require("./routes/postRoutes");
+const postActions = require("./routes/postActions")
 
 dotenv.config();
 const app = express();
@@ -33,6 +34,7 @@ app.use(cors({
 // ✅ Routes
 app.use("/api/auth", authRoutes);
 app.use("/api/posts", postRoutes);
+app.use("/api/post", postActions);
 
 console.log("🚀 Server is starting...");
 

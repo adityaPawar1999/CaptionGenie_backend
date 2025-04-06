@@ -7,7 +7,7 @@ const multer = require("multer");
 const path = require("path");
 
 const { body, validationResult } = require("express-validator"); // Import validation functions
-const authenticateToken = require("./authenticateToken");
+const authenticateToken = require("../middleware/authenticateToken");
 const adminMiddleware = require("../middleware/adminMiddleware");
 
 // 🔹 Admin Routes for Post Management
@@ -192,6 +192,72 @@ router.delete("/delete/:id", authenticateToken, async (req, res) => {
     }
 });
 
+// add likes to post
+router.post('/like/:id', authenticateToken, async (req, res) => {
+    try {
+        console.log("like hits");
+      const post = await Post.findById(req.params.id);
+      if (!post) {
+        return res.status(404).json({ error: 'Post not found' });
+      }
+  
+      const userId = req.user.id;
+      const index = post.likes.indexOf(userId);
+  
+      if (index === -1) {
+        post.likes.push(userId); // Like post
+      } else {
+        post.likes.splice(index, 1); // Unlike post
+      }
+  
+      await post.save();
+      res.json({ message: 'Like status updated successfully', likes: post.likes });
+    } catch (error) {
+      console.error('🚨 Error updating like:', error);
+      res.status(500).json({ error: 'Server error while updating like' });
+    }
+  });
+  
+
+// 🔹 Add Comment to Post (Protected)
+router.post("/comment/:id", authenticateToken, async (req, res) => {
+    try {
+        const { text } = req.body;
+        if (!text || !text.trim()) {
+            return res.status(400).json({ error: "Comment text is required" });
+        }
+
+        const post = await Post.findById(req.params.id);
+        if (!post) {
+            return res.status(404).json({ error: "Post not found" });
+        }
+
+        const newComment = {
+            user: req.user.id,
+            text: text.trim(),
+            createdAt: new Date()
+        };
+
+        post.comments.push(newComment);
+        await post.save();
+
+        // Populate user information for the new comment
+        const populatedPost = await Post.findById(post._id)
+            .populate('comments.user', 'name username');
+
+        const addedComment = populatedPost.comments[populatedPost.comments.length - 1];
+
+        res.status(201).json({
+            message: "Comment added successfully",
+            comment: addedComment
+        });
+
+    } catch (error) {
+        console.error("🚨 Error adding comment:", error);
+        res.status(500).json({ error: "Server error while adding comment" });
+    }
+});
+
 // 🔹 Get Related Posts by Categories (Public)
 router.post("/related", async (req, res) => {
     try {
@@ -293,6 +359,78 @@ router.post('/save/:id', authenticateToken, async (req, res) => {
     }
 });
 
+
+router.post('/like/:id', async (req, res) => {
+    try {
+        console.log("like hits");
+      const post = await Post.findById(req.params.id);
+      if (!post) {
+        return res.status(404).json({ error: 'Post not found' });
+      }
+  
+      const { userId } = req.body;
+      if (!userId) {
+        return res.status(400).json({ error: 'User ID is required' });
+      }
+  
+      const index = post.likes.indexOf(userId);
+  
+      if (index === -1) {
+        post.likes.push(userId); // Like post
+      } else {
+        post.likes.splice(index, 1); // Unlike post
+      }
+  
+      await post.save();
+      res.json({ message: 'Like status updated successfully', likes: post.likes });
+    } catch (error) {
+      console.error('🚨 Error updating like:', error);
+      res.status(500).json({ error: 'Server error while updating like' });
+    }
+  });
+  
+// 🔹 Add Comment (Protected)
+router.post('/comment/:id', authenticateToken, async (req, res) => {
+    try {
+        const { text } = req.body;
+        if (!text) {
+            return res.status(400).json({ error: 'Comment text is required' });
+        }
+
+        const post = await Post.findById(req.params.id);
+        if (!post) {
+            return res.status(404).json({ error: 'Post not found' });
+        }
+
+        const comment = {
+            user: req.user.id,
+            text
+        };
+
+        post.comments.push(comment);
+        await post.save();
+        res.json({ message: 'Comment added successfully', comment });
+    } catch (error) {
+        console.error('🚨 Error adding comment:', error);
+        res.status(500).json({ error: 'Server error while adding comment' });
+    }
+});
+
+// 🔹 Get Comments (Public)
+router.get('/comments/:id', async (req, res) => {
+    try {
+        const post = await Post.findById(req.params.id).populate('comments.user', 'name username');
+        if (!post) {
+            return res.status(404).json({ error: 'Post not found' });
+        }
+
+        res.json({ comments: post.comments });
+    } catch (error) {
+        console.error('🚨 Error fetching comments:', error);
+        res.status(500).json({ error: 'Server error while fetching comments' });
+    }
+});
+
 // 🔹 Unsave Post (Protected)
 router.delete('/unsave/:id', authenticateToken, async (req, res) => {
     try {
@@ -326,6 +464,8 @@ router.get('/saved/posts', authenticateToken, async (req, res) => {
         res.status(500).json({ error: 'Server error while fetching saved posts' });
     }
 });
+
+
 
 module.exports = router;
 

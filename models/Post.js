@@ -27,6 +27,31 @@ const PostSchema = new mongoose.Schema({
     type: [String],
     default: [],
   },
+  likes: {
+    type: [{
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User"
+    }],
+    default: []
+  },
+  comments: {
+    type: [{
+      user: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "User",
+        required: true
+      },
+      text: {
+        type: String,
+        required: true
+      },
+      createdAt: {
+        type: Date,
+        default: Date.now
+      }
+    }],
+    default: []
+  },
   user: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "User",
