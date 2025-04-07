@@ -27,7 +27,7 @@ app.use('/images', express.static(path.join(__dirname, 'images')));
 
 app.use(cookieParser());
 app.use(cors({
-  origin: ["https://captiongenie-nlsq.vercel.app", "https://captiongenie-y4do.vercel.app", "believable-truth-production-58ad.up.railway.app"],
+  origin: ["https://captiongenie-nlsq.vercel.app", "https://captiongenie-y4do.vercel.app", "believable-truth-production-58ad.up.railway.app","http://localhost:3000"],
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept'],
   exposedHeaders: ['Content-Length', 'Authorization'],
